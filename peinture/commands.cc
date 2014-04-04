@@ -16,7 +16,7 @@ void erasecell(int r, int c)
   current[r][c] = '.';
 }
 
-long countDiff(char[][] tab, char[][] expected, int l, int h)
+long countDiff(char** tab, char** expected, int l, int h)
 {
   long res = 0;
   for (int i = 0; i < l; i++)
@@ -28,7 +28,7 @@ long countDiff(char[][] tab, char[][] expected, int l, int h)
 	      res++;
 	    }
 	}
-    }
+	}
   return res;
 }
 
