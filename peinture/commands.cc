@@ -11,6 +11,7 @@ void paintsq(int r, int c, int s)
       current[y][x] = '#';
 }
 
+
 void erasecell(int r, int c)
 {
   current[r][c] = '.';
