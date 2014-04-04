@@ -3,6 +3,7 @@
 #include "entry.hh"
 #include "commands.hh"
 
+
 int main (int argc, char **argv)
 {
 	for (int i = 0; i < 716 ; i++)
@@ -11,7 +12,7 @@ int main (int argc, char **argv)
 		{
 			if (entry[i][j] == '#')
 			{
-				paintsq(i, j, 1);
+				paintsq(i, j, 0);
 			}
 		}
 	}
