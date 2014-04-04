@@ -14,3 +14,20 @@ void erasecell(int r, int c)
 {
   entry[r][c] = '.';
 }
+
+long countDiff(char[][] tab, char[][] expected, int l, int h)
+{
+  long res = 0;
+  for (int i = 0; i < l; i++)
+    {
+      for (int j = 0; j < h; j++)
+	{
+	  if (tab[i][j] != expected[i][j])
+	    {
+	      res++;
+	    }
+	}
+    }
+  return res;
+}
+
