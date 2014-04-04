@@ -1,6 +1,6 @@
 #include "algo.hh"
 
-void heuristic()
+void heuristicPaintSq(int& r, int& c, int& s)
 {
+  
 }
-
