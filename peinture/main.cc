@@ -4,6 +4,15 @@
 #include "entry.hh"
 #include "commands.hh"
 
+long countDiff(int l, int h)
+{
+  long res = 0;
+  for (int i = 0; i < l; i++)
+	for (int j = 0; j < h; j++)
+		if (current[i][j] != entry[i][j])
+			res++;
+  return res;
+}
 
 int main (int argc, char **argv)
 {
