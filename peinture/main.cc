@@ -24,20 +24,25 @@ int main (int argc, char **argv)
 		{
 			if (entry[i][j] == '#' && current[i][j] == '.')
 			{
-				int counti = 1, countj = 1;
-				while (entry[i + counti][j] == '#' && current[i + counti][j] != '#') counti++;
-				while ((j + countj) < 716 && entry[i][j + countj] == '#'&& entry[i][j+ countj] != '#') countj++;
-				int min = std::min(counti, countj)/2;
-				paintsq(i + min, j + min, min);
-				count++;
-				std::cout << "PAINTSQ " << i + min << " " << j + min << " " <<  min << std::endl;
+			  int score = 0;
 
+			  for (int counti = 0; counti < 3; counti++)
+			    for (int countj = 0; countj < 3; countj++)
+			      if (entry[i][j] == '#' && current[i][j] == '.')
+				score++;
+			  if (score > 5)
+			  {
+			    paintsq(i + 1, j + 1, 1);
+			    std::cout << "PAINTSQ " << i + 1 << " " << j + 1 << " " <<  1 << std::endl;
+			  }
+			  std::cout << "PAINTSQ " << i << " " << j  << " " << 0 << std::endl;
+			  count++;
 			}
 			if (entry[i][j] == '.' && current[i][j] == '#')
 			{
-				erasecell(i, j);
-				std::cout << "ERASECELL " << i << " " << j << std::endl;
-				count++;
+			  erasecell(i, j);
+			  std::cout << "ERASECELL " << i << " " << j << std::endl;
+			  count++;
 			}
 		}
 	}
