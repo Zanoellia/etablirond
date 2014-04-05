@@ -62,6 +62,7 @@ namespace GoogleParisHashCode2014
             public int Cost { get; set; }
             public Junction From { get; set;}
             public Junction To { get; set; }
+            public int Handicap { get; set; }
             public bool AlreadyUsed { get; set; }
 
             public static Street Parse(string input)
@@ -111,6 +112,7 @@ namespace GoogleParisHashCode2014
                 CurrentTimer += street.Cost;
                 street.AlreadyUsed = true;
                 street.Length = 0;
+                street.Handicap += 1000;
                 TakenStreets.Add(street);
                 TakenJunctions.Add(junction);
             }
@@ -130,7 +132,7 @@ namespace GoogleParisHashCode2014
                 var current = CurrentJunction;
                 var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
                 var maxDistances = possibleMoves.Where(p => p.Value.Length == possibleMoves.Max(max => max.Value.Length));
-                var res = maxDistances.Where(p => p.Value.Cost == maxDistances.Min(min => min.Value.Cost)).Select(p => p.Key).FirstOrDefault();
+                var res = maxDistances.Where(p => p.Value.Cost + p.Value.Handicap == maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key).FirstOrDefault();
                 
                 return res;
             }
@@ -228,25 +230,22 @@ namespace GoogleParisHashCode2014
         {
             //Cars[1].AddJunction(Junctions[1]);
             //Cars[1].AddJunction(Junctions[2]);
-            Parallel.For(0, Cars.Count,
-                         i =>
-                             {
-                                 var car = Cars[i];
+            foreach (var car in Cars)
+            {
+                // Single car logic
+                while (true)
+                {
+                    // Single move logic
+                    Junction nextMove = car.GetNextMove();
 
-                                 // Single car logic
-                                 while (true)
-                                 {
-                                     // Single move logic
-                                     Junction nextMove = car.GetNextMove();
+                    if (nextMove == null)
+                    {
+                        break;
+                    }
 
-                                     if (nextMove == null)
-                                     {
-                                         break;
-                                     }
-
-                                     car.AddJunction(nextMove);
-                                 }
-                             });
+                    car.AddJunction(nextMove);
+                }
+            }
         }
     }
 }
