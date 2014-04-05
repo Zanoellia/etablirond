@@ -13,8 +13,30 @@ def CreateGraph(lNode, lEdge):
     i += 1
   while (lEdge):
     (inter1, inter2, direction, cost, length) = lEdge.pop()
-    G.add_edge(inter1,inter2, cost=cost, length=length)
+    G.add_edge(inter1,inter2, cost=cost, length=length, visited=0)
     if (direction == 2):
       G.add_edge(inter2, inter1, cost=cost, length=length)
   return G
+
+
+def visitStreet(G, startNode, destNode):
+  if (G[startNode][destNode]):
+    G[startNode][destNode]['visited'] = 1
+    try:
+      G[destNode][startNode]['visited'] = 1
+    except ValueError:
+      pass
+    return [G[startNode][destNode]['cost'], G[startNode][destNode]['length']]
+  else:
+    return None
+
+
+
+
+
+
+
+
+
+
 
