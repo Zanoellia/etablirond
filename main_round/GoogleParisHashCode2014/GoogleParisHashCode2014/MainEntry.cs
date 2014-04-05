@@ -59,6 +59,7 @@ namespace GoogleParisHashCode2014
         {
             public DirectionEnum Direction { get; set; }
             public int Length { get; set; }
+            public int OriginalLength { get; set; }
             public int Cost { get; set; }
             public Junction From { get; set;}
             public Junction To { get; set; }
@@ -74,6 +75,7 @@ namespace GoogleParisHashCode2014
                 res.Direction = (DirectionEnum)int.Parse(coords[2]);
                 res.Cost = int.Parse(coords[3]);
                 res.Length = int.Parse(coords[4]);
+                res.OriginalLength = res.Length;
                 return res;
             }
 
@@ -87,6 +89,13 @@ namespace GoogleParisHashCode2014
             {
                 Console.WriteLine(ToString());
             }
+
+            public void Reset()
+            {
+                Length = OriginalLength;
+                Handicap = 0;
+                AlreadyUsed = false;
+            }
         }
 
         class Car
@@ -94,7 +103,7 @@ namespace GoogleParisHashCode2014
             public List<Junction> TakenJunctions { get; set; }
             public List<Street> TakenStreets { get; set; }
             public Junction CurrentJunction { get { return TakenJunctions.Last(); } }
-            public int CurrentDistance { get; set; }
+            public long CurrentDistance { get; set; }
             public int CurrentTimer { get; set; }
 
             public Car(Junction first)
@@ -105,14 +114,14 @@ namespace GoogleParisHashCode2014
                 CurrentTimer = 0;
             }
 
-            public void AddJunction(Junction junction)
+            public void AddJunction(Junction junction, int handicap)
             {
                 var street = CurrentJunction.Neighbours[junction];
                 CurrentDistance += street.AlreadyUsed ? 0 : street.Length;
                 CurrentTimer += street.Cost;
                 street.AlreadyUsed = true;
                 street.Length = 0;
-                street.Handicap += 1000;
+                street.Handicap += handicap;
                 TakenStreets.Add(street);
                 TakenJunctions.Add(junction);
             }
@@ -161,12 +170,6 @@ namespace GoogleParisHashCode2014
                 Streets.Add(street);
             }
 
-            // Car creation
-            for (int i = 0; i < _nbCars; i++)
-            {
-                Cars.Add(new Car(Junctions[_startJunction]));
-            }
-
             /*
             foreach (var junction in TakenJunctions.Values)
             {
@@ -191,13 +194,13 @@ namespace GoogleParisHashCode2014
             Sb.AppendFormat("{0}\n", Cars.Count);
             foreach (var car in Cars)
             {
-                car.Dump();
                 Sb.AppendFormat("{0}\n", car.TakenJunctions.Count);
                 foreach (var move in car.TakenJunctions)
                 {
                     Sb.AppendFormat("{0}\n", move.Id);
                 }
             }
+            Console.WriteLine("Earned points: {0}", Cars.Sum(c => c.CurrentDistance));
         }
 
         private static int _nbJunctions;
@@ -209,27 +212,67 @@ namespace GoogleParisHashCode2014
         private static readonly List<Street> Streets = new List<Street>();
         private static readonly List<Car> Cars = new List<Car>();
         private static readonly StringBuilder Sb = new StringBuilder();
+        private static readonly Dictionary<int, long> Results = new Dictionary<int, long>();
+
+        private static void HillClimbing(string filename)
+        {
+            int step = 2000;
+            int curHandicap = 4000;
+
+            while (step != 1)
+            {
+                var toTest = new List<int> { curHandicap - step, curHandicap + step };
+
+                foreach (var i in toTest)
+                {
+                    // Init structs
+                    Init();
+                    Run(i);
+                    FillResults();
+
+                    using (var sw = new StreamWriter(filename + i + ".out"))
+                    {
+                        sw.Write(Sb.ToString());
+                    }
+                }
+
+                curHandicap = Results[toTest[0]] > Results[toTest[1]] ? toTest[0] : toTest[1];
+                step /= 2;
+            }
+
+            var maxRes = Results.Where(p => p.Value == Results.Max(max => max.Value)).First();
+            Console.WriteLine("Max: handicap {0} : {1}", maxRes.Key, maxRes.Value);
+        }
+
+        private static void Init()
+        {
+            Cars.Clear();
+            Sb.Clear();
+
+            // Car creation
+            for (int i = 0; i < _nbCars; i++)
+            {
+                Cars.Add(new Car(Junctions[_startJunction]));
+            }
+
+            foreach (var street in Streets)
+            {
+                street.Reset();
+            }
+        }
 
         private static void Main()
         {
             const string filename = "paris_54000.txt";
+
             ExtractData(filename);
-
-            Run();
-            FillResults();
-
-            using (var sw = new StreamWriter(filename + ".out"))
-            {
-                sw.Write(Sb.ToString());
-            }
+            HillClimbing(filename);
 
             Console.ReadLine();
         }
 
-        private static void Run()
+        private static void Run(int handicap)
         {
-            //Cars[1].AddJunction(Junctions[1]);
-            //Cars[1].AddJunction(Junctions[2]);
             foreach (var car in Cars)
             {
                 // Single car logic
@@ -243,9 +286,13 @@ namespace GoogleParisHashCode2014
                         break;
                     }
 
-                    car.AddJunction(nextMove);
+                    car.AddJunction(nextMove, handicap);
                 }
             }
+
+            var curLen = Cars.Sum(c => c.CurrentDistance);
+            Results.Add(handicap, curLen);
+            Console.WriteLine("Handicap {0} = {1}", handicap, curLen);
         }
     }
 }
