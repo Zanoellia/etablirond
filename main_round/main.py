@@ -14,13 +14,16 @@ INIT_INTER = 0
 
 def find_a_way(car, graph):
   while 1 == 1:
-    neigb = getNeighboursInfo(graph, car.currentNode)
+    neigb = getNeighboursInfo(graph, car.getCurrentNode())
     best = [ -1, -1, [] ]  #id - time - lol
     for n in neigb:
       if best[0] == -1:
         best = [ n[0]['id'], n[1]['cost'], n ]
-      if n[1]['visited'] == 0:
-        best = [ n[0]['id'], n[1]['cost'], n ]
+      try:
+        if n[1]['visited'] == 0:
+          best = [ n[0]['id'], n[1]['cost'], n ]
+      except KeyError:
+        pass
     if car.getTime() + best[1] < 4516:
       visitStreet(graph, car.currentNode, best[0])
       car.addMove(best[0], best[1])
