@@ -47,7 +47,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="paris_54000.txt" />
+    <Content Include="paris_54000.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="simple.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

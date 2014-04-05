@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GoogleParisHashCode2014
 {
@@ -61,6 +62,7 @@ namespace GoogleParisHashCode2014
             public int Cost { get; set; }
             public Junction From { get; set;}
             public Junction To { get; set; }
+            public int Handicap { get; set; }
             public bool AlreadyUsed { get; set; }
 
             public static Street Parse(string input)
@@ -106,22 +108,33 @@ namespace GoogleParisHashCode2014
             public void AddJunction(Junction junction)
             {
                 var street = CurrentJunction.Neighbours[junction];
-                TakenStreets.Add(street);
-                CurrentDistance += street.Length;
-                CurrentTimer += street.AlreadyUsed ? 0 : street.Cost;
+                CurrentDistance += street.AlreadyUsed ? 0 : street.Length;
+                CurrentTimer += street.Cost;
                 street.AlreadyUsed = true;
+                street.Length = 0;
+                street.Handicap += 1000;
+                TakenStreets.Add(street);
                 TakenJunctions.Add(junction);
             }
 
             public new string ToString()
             {
-                return string.Format("Distance ran: {0}, time consumed: {1}",
-                                     CurrentDistance, CurrentTimer);
+                return string.Format("Distance ran: {0}, time consumed: {1}", CurrentDistance, CurrentTimer);
             }
 
             public void Dump()
             {
                 Console.WriteLine(ToString());
+            }
+
+            public Junction GetNextMove()
+            {
+                var current = CurrentJunction;
+                var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
+                var maxDistances = possibleMoves.Where(p => p.Value.Length == possibleMoves.Max(max => max.Value.Length));
+                var res = maxDistances.Where(p => p.Value.Cost + p.Value.Handicap == maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key).FirstOrDefault();
+                
+                return res;
             }
         }
 
@@ -164,11 +177,13 @@ namespace GoogleParisHashCode2014
             {
                 street.Dump();
             }*/
-            
-            foreach (var junction in Junctions.Values)
-            {
-                junction.Populate();
-            }
+
+            Parallel.For(0, Junctions.Values.ToArray().Length,
+                         i =>
+                             {
+                                 var junction = Junctions.Values.ToList()[i];
+                                 junction.Populate();
+                             });
         }
 
         static void FillResults()
@@ -197,7 +212,7 @@ namespace GoogleParisHashCode2014
 
         private static void Main()
         {
-            const string filename = "simple.txt";
+            const string filename = "paris_54000.txt";
             ExtractData(filename);
 
             Run();
@@ -218,6 +233,18 @@ namespace GoogleParisHashCode2014
             foreach (var car in Cars)
             {
                 // Single car logic
+                while (true)
+                {
+                    // Single move logic
+                    Junction nextMove = car.GetNextMove();
+
+                    if (nextMove == null)
+                    {
+                        break;
+                    }
+
+                    car.AddJunction(nextMove);
+                }
             }
         }
     }
