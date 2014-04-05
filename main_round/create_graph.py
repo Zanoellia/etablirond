@@ -24,7 +24,7 @@ def visitStreet(G, startNode, destNode):
     G[startNode][destNode]['visited'] = 1
     try:
       G[destNode][startNode]['visited'] = 1
-    except ValueError:
+    except KeyError:
       pass
     return [G[startNode][destNode]['cost'], G[startNode][destNode]['length']]
   else:

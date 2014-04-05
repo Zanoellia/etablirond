@@ -4,9 +4,10 @@ class Car:
   time = 0
   currentDistance = 0
   path = [0]
+  graph = None
 
-  def Car(self):
-
+  def __init__(self, G):
+   graph = G
 
   def getCurrentNode():
     return currentNode
