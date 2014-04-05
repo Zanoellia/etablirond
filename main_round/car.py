@@ -23,6 +23,7 @@ class Car:
     self.path.append(node)
 
   def printPath(self):
-    print len(self.path)
+    print (len(self.path))
     for i in range(len(self.path)):
-        print self.path[i]
+        print (self.path[i])
+
