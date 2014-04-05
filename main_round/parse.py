@@ -25,6 +25,7 @@ def parse():
       line_nb = line_nb + 1
 
       inputfile.close()
-      
+      intersections.reverse()
+      streets.reverse()
       return [intersections, streets]
 
