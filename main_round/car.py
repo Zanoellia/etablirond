@@ -5,6 +5,8 @@ class Car:
   currentDistance = 0
   path = []
 
+  def Car(self):
+
   def getCurrentNode():
 
   def getPath():
@@ -14,6 +16,8 @@ class Car:
   def getTime():
 
   def addMove(node):
+    path.append(node)
+
 
 
 
