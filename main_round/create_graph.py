@@ -1,6 +1,5 @@
 #!/usr/bin/python3.3
 
-
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -29,14 +28,6 @@ def visitStreet(G, startNode, destNode):
     return [G[startNode][destNode]['cost'], G[startNode][destNode]['length']]
   else:
     return None
-
-
-
-
-
-
-
-
 
 
 
