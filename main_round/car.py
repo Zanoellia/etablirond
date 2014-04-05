@@ -25,6 +25,7 @@ class Car:
   def addMove(self, node, time):
     self.path.append(node)
     self.time = self.time + time
+    self.currentNode = node
 
   def printPath(self):
     print (len(self.path))
