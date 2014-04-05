@@ -51,7 +51,41 @@ def getNeighboursInfo(G, startNode):
 #    retGraph.append(nx.DiGraph())
 #  return retGraph
 
+def getScorePath(G, path):
+  score = 0
+  if (path == None):
+    return 0
+  for e in G.edges_iter(path):
+    score += e['length']/e['cost']
+  return score
 
+def getTotalTime(G, path):
+  time = 0
+  for e in G.edges_iter(path):
+    time += e['cost']
+  return time
 
+def getBetterPathBetween(G, path1, path2):
+  if path2 == None:
+    return path1
+  if getScorePath(G, path1) > getScorePath(G, path2):
+    return path1
+  return path2
+
+def getBetterPathTo(G, sourceNode, targetNode):
+  paths = all_simple_paths(G, sourceNode, targetNode)
+  bestPath = None
+  for i in range(len(paths)):
+    if (getTotalTime(G, paths[i]) <= 4516):
+      bestPath = getBetterPathBetween(G, paths[i])
+  return bestPath;
+
+def getBetterPath(G, sourceNode):
+  bestPath = None
+  for i in range(len(G.nodes)):
+    newPath = getBetterPathTo(G, sourceNode, G.nodes[i])
+    if (getScorePath(newPath > getScorePath(bestPath))):
+      bestPath = newPath
+  return bestPath
 
 
