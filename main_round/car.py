@@ -24,8 +24,7 @@ class Car:
     path.append(node)
 
   def printPath():
-    path.reverse()
-    print("%d\n", len(path))
-    while (path)
-      print("%d\n", path.pop())
+    print len(path))
+    for i in range(len(path)):
+        print path[i]
 

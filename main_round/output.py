@@ -1,11 +1,6 @@
 #!/usr/bin/env python.
 # -*- coding: utf-8 -*-
 
-def printCarPath(carPath):
-    print len(carPath)
-    for i in range(len(carPath)):
-        print carPath[i]
-
 def printOutput(C, cars):
     print C
     for i in range(C):
