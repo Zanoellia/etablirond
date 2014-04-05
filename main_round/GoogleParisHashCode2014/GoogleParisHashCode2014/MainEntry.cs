@@ -136,13 +136,23 @@ namespace GoogleParisHashCode2014
                 Console.WriteLine(ToString());
             }
 
+            private static readonly object Lock = new object();
             public Junction GetNextMove()
             {
                 var current = CurrentJunction;
-                var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
-                var maxDistances = possibleMoves.Where(p => p.Value.Length == possibleMoves.Max(max => max.Value.Length));
-                var res = maxDistances.Where(p => p.Value.Cost + p.Value.Handicap == maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key).FirstOrDefault();
-                
+                Junction res;
+                lock (Lock)
+                {
+                    var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
+                    var maxDistances =
+                        possibleMoves.Where(p => p.Value.Length == possibleMoves.Max(max => max.Value.Length));
+                     res =
+                        maxDistances.Where(
+                            p =>
+                            p.Value.Cost + p.Value.Handicap ==
+                            maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key).
+                            FirstOrDefault();
+                }
                 return res;
             }
         }
@@ -211,37 +221,31 @@ namespace GoogleParisHashCode2014
         private static readonly List<Street> Streets = new List<Street>();
         private static readonly List<Car> Cars = new List<Car>();
         private static readonly StringBuilder Sb = new StringBuilder();
-        private static readonly Dictionary<int, long> Results = new Dictionary<int, long>();
+        private static readonly Dictionary<string, long> Results = new Dictionary<string, long>();
 
         private static void HillClimbing(string filename)
         {
-            int step = 50;
-            int curHandicap = 100;
-
-            while (step != 1)
+            for (int i = 0; i < 300; i++)
             {
-                var toTest = new List<int> { curHandicap - step, curHandicap + step };
-
-                foreach (var i in toTest)
+                for (int j = 0; j < 3; j++)
                 {
-                    if (!Results.ContainsKey(i))
+                    string key = i + "_" + j;
+
+                    if (!Results.ContainsKey(key))
                     {
                         Init();
-                        Run(i);
+                        Run(i, key);
                         FillResults();
 
-                        using (var sw = new StreamWriter(filename + i + ".out"))
+                        using (var sw = new StreamWriter(filename + key + ".out"))
                         {
                             sw.Write(Sb.ToString());
                         }
                     }
                 }
-
-                curHandicap = Results[toTest[0]] > Results[toTest[1]] ? toTest[0] : toTest[1];
-                step /= 2;
             }
 
-            var maxRes = Results.Where(p => p.Value == Results.Max(max => max.Value)).First();
+            var maxRes = Results.First(p => p.Value == Results.Max(max => max.Value));
             Console.WriteLine("Max: handicap {0} : {1}", maxRes.Key, maxRes.Value);
         }
 
@@ -272,27 +276,29 @@ namespace GoogleParisHashCode2014
             Console.ReadLine();
         }
 
-        private static void Run(int handicap)
+        private static void Run(int handicap, string key)
         {
-            foreach (var car in Cars)
-            {
-                // Single car logic
-                while (true)
-                {
-                    // Single move logic
-                    Junction nextMove = car.GetNextMove();
+            Parallel.For(0, Cars.Count,
+                         i =>
+                             {
+                                 var car = Cars[i];
+                                 // Single car logic
+                                 while (true)
+                                 {
+                                     // Single move logic
+                                     Junction nextMove = car.GetNextMove();
 
-                    if (nextMove == null)
-                    {
-                        break;
-                    }
+                                     if (nextMove == null)
+                                     {
+                                         break;
+                                     }
 
-                    car.AddJunction(nextMove, handicap);
-                }
-            }
+                                     car.AddJunction(nextMove, handicap);
+                                 }
+                             });
 
             var curLen = Cars.Sum(c => c.CurrentDistance);
-            Results.Add(handicap, curLen);
+            Results.Add(key, curLen);
             Console.WriteLine("Handicap {0} = {1}", handicap, curLen);
         }
     }
