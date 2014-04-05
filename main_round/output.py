@@ -6,9 +6,9 @@ def printCarPath(carPath):
     for i in range(len(carPath)):
         print carPath[i]
 
-def printOutput(cars):
+def printOutput(C, cars):
     print C
-    for i in range(len(cars)):
+    for i in range(C):
         printCarPath(cars[i])
 
 # EXEMPLE D'UTILISATION
@@ -24,5 +24,5 @@ car2 = [0, 1, 2]
 # Liste des voitures
 # Pareil, ici exemple en attendant.
 cars = [car1, car2]
-printOutput(cars)
+printOutput(C, cars)
 
