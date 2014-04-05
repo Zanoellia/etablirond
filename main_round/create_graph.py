@@ -1,15 +1,13 @@
 #!/usr/bin/python3.3
 
-
 import networkx as nx
-import matplotlib.pyplot as plt
 
 def CreateGraph(lNode, lEdge):
   G = nx.DiGraph()
   i = 0
   while (lNode):
     (lati, longi) = lNode.pop()
-    G.add_node(i, lati=lati, longi=longi)
+    G.add_node(i, id=i, lati=lati, longi=longi)
     i += 1
   while (lEdge):
     (inter1, inter2, direction, cost, length) = lEdge.pop()
@@ -31,12 +29,12 @@ def visitStreet(G, startNode, destNode):
     return None
 
 
-
-
-
-
-
-
+def getNeighboursInfo(G, startNode):
+  ret = []
+  nodes = G.neighbors(startNode)
+  for node in nodes:
+    ret.append([ G.node[node], G[startNode][node]])
+  return ret
 
 
 

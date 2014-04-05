@@ -26,4 +26,3 @@ class Car:
     print len(self.path)
     for i in range(len(self.path)):
         print self.path[i]
-
