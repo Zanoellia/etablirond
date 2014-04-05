@@ -4,6 +4,7 @@ from create_graph import *
 from parse import *
 from car import *
 from output import *
+import random
 
 # GLOBAL VAR FOR INFOS
 NB_INTERSECTIONS = 0
@@ -17,13 +18,17 @@ def find_a_way(car, graph):
     neigb = getNeighboursInfo(graph, car.getCurrentNode())
     best = [ -1, -1, [] ]  #id - time - lol
     for n in neigb:
-      if best[0] == -1:
+      r = random.randint(1,100)
+      if best[0] == -1 and r > 50:
         best = [ n[0]['id'], n[1]['cost'], n ]
       try:
         if n[1]['visited'] == 0:
           best = [ n[0]['id'], n[1]['cost'], n ]
       except KeyError:
         pass
+    if best[0] == -1:
+      n = neigb[0]
+      best = [ n[0]['id'], n[1]['cost'], n ]
     if car.getTime() + best[1] < 4516:
       visitStreet(graph, car.currentNode, best[0])
       car.addMove(best[0], best[1])
