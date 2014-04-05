@@ -24,8 +24,8 @@ def parse():
                       int(data[3]), int(data[4])])
       line_nb = line_nb + 1
 
-      inputfile.close()
-      intersections.reverse()
-      streets.reverse()
-      return [intersections, streets]
+  inputfile.close()
+  intersections.reverse()
+  streets.reverse()
+  return [intersections, streets]
 
