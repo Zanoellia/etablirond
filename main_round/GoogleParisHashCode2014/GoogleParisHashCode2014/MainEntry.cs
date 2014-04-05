@@ -137,6 +137,7 @@ namespace GoogleParisHashCode2014
             }
 
             private static readonly object Lock = new object();
+            private static readonly Random Rand = new Random();
             public Junction GetNextMove()
             {
                 var current = CurrentJunction;
@@ -146,12 +147,13 @@ namespace GoogleParisHashCode2014
                     var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
                     var maxDistances =
                         possibleMoves.Where(p => p.Value.Length == possibleMoves.Max(max => max.Value.Length));
-                     res =
+                     var tmp =
                         maxDistances.Where(
                             p =>
                             p.Value.Cost + p.Value.Handicap ==
-                            maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key).
-                            FirstOrDefault();
+                            maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key);
+                    var count = tmp.Count();
+                    res = count > 1 ? tmp.ToList()[Rand.Next(count)] : tmp.FirstOrDefault();
                 }
                 return res;
             }
@@ -225,18 +227,18 @@ namespace GoogleParisHashCode2014
 
         private static void HillClimbing(string filename)
         {
-            for (int i = 0; i < 300; i++)
+            for (int i = 10; i < 300; i++)
             {
-                for (int j = 0; j < 3; j++)
+                for (int j = 0; j < 25; j++)
                 {
                     string key = i + "_" + j;
 
-                    if (!Results.ContainsKey(key))
-                    {
-                        Init();
-                        Run(i, key);
-                        FillResults();
+                    Init();
+                    Run(i, key);
+                    FillResults();
 
+                    if (Results.ContainsKey(key))
+                    {
                         using (var sw = new StreamWriter(filename + key + ".out"))
                         {
                             sw.Write(Sb.ToString());
@@ -245,8 +247,15 @@ namespace GoogleParisHashCode2014
                 }
             }
 
-            var maxRes = Results.First(p => p.Value == Results.Max(max => max.Value));
-            Console.WriteLine("Max: handicap {0} : {1}", maxRes.Key, maxRes.Value);
+            try
+            {
+                var maxRes = Results.First(p => p.Value == Results.Max(max => max.Value));
+                Console.WriteLine("Max: handicap {0} : {1}", maxRes.Key, maxRes.Value);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("No max found");
+            }
         }
 
         private static void Init()
@@ -298,7 +307,11 @@ namespace GoogleParisHashCode2014
                              });
 
             var curLen = Cars.Sum(c => c.CurrentDistance);
-            Results.Add(key, curLen);
+            if (curLen > 1470002)
+            {
+                Console.WriteLine("!!!");
+                Results.Add(key, curLen);
+            }
             Console.WriteLine("Handicap {0} = {1}", handicap, curLen);
         }
     }

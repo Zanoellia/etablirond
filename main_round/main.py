@@ -59,7 +59,6 @@ def main():
       nextMove = car.getNextMove(G)
       if (nextMove == None):
          break;
-      car.addMove(G, nextMove[0]['id'], nextMove[1]['cost'])
 
   printOutput(NB_CARS, cars)
 main()

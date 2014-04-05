@@ -37,34 +37,29 @@ class Car:
         print (self.path[i])
 
   def getNextMove(self, G):
-#    possibleMoves = getNeighboursInfo(G, self.currentNode)
-#    maxNodes = []
-#  deleteNodes = []
-#    maxLength = 0
-#    for move in possibleMoves:
-#      if (self.time + move[1]['cost'] >= NB_SECS):
-#        deleteNodes.append(move)
-#
-#    for delete in deleteNodes:
-#      possibleMoves.remove(delete)
-#
-#    for move in possibleMoves:
-#      if (move[1]['length'] > maxLength):
-#          maxNodes = []
-#        maxNodes.append(move)
-#        maxLength = move[1]['length']
-#      if (move[1]['length'] == maxLength):
-#        maxNodes.append(move)
-#
-##    print (maxLength)
-#    newList = sorted(maxNodes, key=lambda k: k[1]['cost'])
-#    if (newList):
-#      newList.reverse()
-#      return newList.pop()
-#    else:
-#      return None
 
     shts = nx.shortest_path_length(G, self.currentNode, target=None, weight = 'cost')
-    print (shts[800])
+    for key, value in shts.items():
+      if (value >= NB_SECS):
+        del shts[key]
+    if (not shts):
+      return None
+
+    shts2 = nx.shortest_path_length(G, self.currentNode, target=None, weight = 'length')
+    sorted_shts2 = sorted(shts2.items(), key=lambda x:x[1])
+    gotoNode = sorted_shts2.pop()
+
+    path = nx.dijkstra_path(G, self.currentNode, gotoNode[0], weight='cost')
+
+    path.pop(0)
+    for pos in path:
+      self.path.append(pos)
+      visitStreet(G, self.currentNode, pos)
+#     self.addMove(G, pos, 0)
+      self.currentNode = pos
+    self.time += shts[gotoNode[0]]
+
+    return 1
+
 
 
