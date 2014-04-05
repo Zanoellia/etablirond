@@ -1,15 +1,19 @@
 
 def parse():
-#nb_intersection = 11348
-#nb_street = 17958
-#nb_sec = 54000
-#nb_car = 8
-#init_inter = 4516
-
   intersections = []
   streets = []
   inputfile = open ('paris_54000.txt')
 
+# first line
+  line = inputfile.readline()
+  data = line.split()
+  nb_intersections = int(data[0])
+  nb_streets = int(data[1])
+  nb_secs = int(data[2])
+  nb_cars = int(data[3])
+  init_inter = int(data[4])
+
+# data
   my_text = inputfile.readlines()[1:] # pass first line
   line_nb = 0
 
@@ -27,5 +31,6 @@ def parse():
   inputfile.close()
   intersections.reverse()
   streets.reverse()
-  return [intersections, streets]
+  return [nb_intersections, nb_streets, nb_secs, nb_cars, init_inter,
+          intersections, streets]
 
