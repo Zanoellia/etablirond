@@ -9,12 +9,16 @@ class Car:
 
 
   def getCurrentNode():
+    return currentNode
 
   def getPath():
+    return path
 
   def getDistance():
+    return currentDistance
 
   def getTime():
+    return time
 
   def addMove(node):
     path.append(node)
@@ -24,11 +28,4 @@ class Car:
     print("%d\n", len(path))
     while (path)
       print("%d\n", path.pop())
-
-
-
-
-
-
-
 
