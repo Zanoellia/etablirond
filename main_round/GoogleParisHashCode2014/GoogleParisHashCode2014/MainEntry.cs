@@ -15,7 +15,7 @@ namespace GoogleParisHashCode2014
             public int Id { get; set; }
             public double X { get; set; }
             public double Y { get; set; }
-            public Dictionary<Street, Junction> Neighbours { get; set; }
+            public Dictionary<Junction, Street> Neighbours { get; set; }
 
             public static Junction Parse(string input)
             {
@@ -24,13 +24,13 @@ namespace GoogleParisHashCode2014
                 res.X = double.Parse(coords[0], CultureInfo.InvariantCulture);
                 res.Y = double.Parse(coords[1], CultureInfo.InvariantCulture);
                 res.Id = _idFactory++;
-                res.Neighbours = new Dictionary<Street, Junction>();
+                res.Neighbours = new Dictionary<Junction, Street>();
                 return res;
             }
 
             public void Populate()
             {
-                var n = Streets.Where(s => s.From.Id == Id).ToDictionary(s => s, s => s.To).Union(Streets.Where(s => s.To.Id == Id && s.Direction == DirectionEnum.TwoWay).ToDictionary(s => s, s => s.From));
+                var n = Streets.Where(s => s.From.Id == Id).ToDictionary(s => s.To, s => s).Union(Streets.Where(s => s.To.Id == Id && s.Direction == DirectionEnum.TwoWay).ToDictionary(s => s.From, s => s));
                 foreach (var pair in n)
                 {
                     Neighbours.Add(pair.Key, pair.Value);
@@ -105,21 +105,24 @@ namespace GoogleParisHashCode2014
 
             public void AddJunction(Junction junction)
             {
-                var street = GetStreet(CurrentJunction, junction);
+                var street = CurrentJunction.Neighbours[junction];
                 TakenStreets.Add(street);
                 CurrentDistance += street.Length;
-                CurrentTimer += street.Cost;
+                CurrentTimer += street.AlreadyUsed ? 0 : street.Cost;
+                street.AlreadyUsed = true;
                 TakenJunctions.Add(junction);
             }
-        }
 
-        private static Street GetStreet(Junction from, Junction to)
-        {
-            return
-                Streets.Where(
-                    s =>
-                    (s.From == from && s.To == to) ||
-                    (s.From == to && s.To == from && s.Direction == DirectionEnum.TwoWay)).First();
+            public new string ToString()
+            {
+                return string.Format("Distance ran: {0}, time consumed: {1}",
+                                     CurrentDistance, CurrentTimer);
+            }
+
+            public void Dump()
+            {
+                Console.WriteLine(ToString());
+            }
         }
 
         private static void ExtractData(string file)
@@ -173,6 +176,7 @@ namespace GoogleParisHashCode2014
             Sb.AppendFormat("{0}\n", Cars.Count);
             foreach (var car in Cars)
             {
+                car.Dump();
                 Sb.AppendFormat("{0}\n", car.TakenJunctions.Count);
                 foreach (var move in car.TakenJunctions)
                 {
@@ -209,8 +213,12 @@ namespace GoogleParisHashCode2014
 
         private static void Run()
         {
-            Cars[1].AddJunction(Junctions[1]);
-            Cars[1].AddJunction(Junctions[2]);
+            //Cars[1].AddJunction(Junctions[1]);
+            //Cars[1].AddJunction(Junctions[2]);
+            foreach (var car in Cars)
+            {
+                // Single car logic
+            }
         }
     }
 }
