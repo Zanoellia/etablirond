@@ -200,7 +200,6 @@ namespace GoogleParisHashCode2014
                     Sb.AppendFormat("{0}\n", move.Id);
                 }
             }
-            Console.WriteLine("Earned points: {0}", Cars.Sum(c => c.CurrentDistance));
         }
 
         private static int _nbJunctions;
@@ -216,8 +215,8 @@ namespace GoogleParisHashCode2014
 
         private static void HillClimbing(string filename)
         {
-            int step = 2000;
-            int curHandicap = 4000;
+            int step = 50;
+            int curHandicap = 100;
 
             while (step != 1)
             {
@@ -225,14 +224,16 @@ namespace GoogleParisHashCode2014
 
                 foreach (var i in toTest)
                 {
-                    // Init structs
-                    Init();
-                    Run(i);
-                    FillResults();
-
-                    using (var sw = new StreamWriter(filename + i + ".out"))
+                    if (!Results.ContainsKey(i))
                     {
-                        sw.Write(Sb.ToString());
+                        Init();
+                        Run(i);
+                        FillResults();
+
+                        using (var sw = new StreamWriter(filename + i + ".out"))
+                        {
+                            sw.Write(Sb.ToString());
+                        }
                     }
                 }
 
