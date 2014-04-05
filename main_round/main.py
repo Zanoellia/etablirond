@@ -5,6 +5,13 @@ from parse import *
 from car import *
 from output import *
 
+# GLOBAL VAR FOR INFOS
+NB_INTERSECTIONS = 0
+NB_STREETS = 0
+NB_SECS = 0
+NB_CARS = 0
+INIT_INTER = 0
+
 def find_a_way(car, graph):
   while 1 == 1:
     neigb = getNeighboursInfo(graph, car.currentNode)
@@ -23,13 +30,13 @@ def find_a_way(car, graph):
 
 def main():
 # init graphe and infos
-  (nb_intersections, nb_streets, nb_secs, nb_cars, init_inter, lNode, lEdge) = parse()
+  (NB_INTERSECTIONS, NB_STREETS, NB_SECS, NB_CARS, INIT_INTER, lNode, lEdge) = parse()
   G = CreateGraph(lNode, lEdge)
 
 # init des voitures
   cars = []
-  for i in range(nb_cars):
-    car = Car(G, init_inter)
+  for i in range(NB_CARS):
+    car = Car(G, INIT_INTER)
     find_a_way(car, G)
     cars.append(car)
 
@@ -42,7 +49,7 @@ def main():
 #  print(getNeighboursInfo(G, 9877))
 
 # output
-  printOutput(nb_cars, cars)
+  printOutput(NB_CARS, cars)
 
 
 main()
