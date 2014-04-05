@@ -1,31 +1,29 @@
 
 class Car:
-  currentNode = 0
-  time = 0
-  currentDistance = 0
-  path = [0]
-  graph = None
-
   def __init__(self, G):
-   graph = G
+   self.currentNode = 0
+   self.time = 0
+   self.currentDistance = 0
+   self.path = [0]
+   self.graph = G
 
-  def getCurrentNode():
-    return currentNode
+  def getCurrentNode(self):
+    return self.currentNode
 
-  def getPath():
-    return path
+  def getPath(self):
+    return self.path
 
-  def getDistance():
-    return currentDistance
+  def getDistance(self):
+    return self.currentDistance
 
-  def getTime():
-    return time
+  def getTime(self):
+    return self.time
 
-  def addMove(node):
-    path.append(node)
+  def addMove(self, node):
+    self.path.append(node)
 
-  def printPath():
-    print len(path))
-    for i in range(len(path)):
-        print path[i]
+  def printPath(self):
+    print len(self.path)
+    for i in range(len(self.path)):
+        print self.path[i]
 
