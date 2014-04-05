@@ -5,6 +5,22 @@ from parse import *
 from car import *
 from output import *
 
+def find_a_way(car, graph):
+  while 1 == 1:
+    neigb = getNeighboursInfo(graph, car.currentNode)
+    best = [ -1, -1, [] ]  #id - time - lol
+    for n in neigb:
+      if best[0] == -1:
+        best = [ n[0]['id'], n[1]['cost'], n ]
+      if n[1]['visited'] == 0:
+        best = [ n[0]['id'], n[1]['cost'], n ]
+    if car.getTime() + best[1] < 4516:
+      visitStreet(graph, car.currentNode, best[0])
+      car.addMove(best[0], best[1])
+    else:
+      break
+
+
 def main():
 # init graphe and infos
   (nb_intersections, nb_streets, nb_secs, nb_cars, init_inter, lNode, lEdge) = parse()
@@ -13,7 +29,8 @@ def main():
 # init des voitures
   cars = []
   for i in range(nb_cars):
-    car = Car(G)
+    car = Car(G, init_inter)
+    find_a_way(car, G)
     cars.append(car)
 
 # algo
@@ -26,7 +43,6 @@ def main():
 
 # output
   printOutput(nb_cars, cars)
-
 
 
 main()
