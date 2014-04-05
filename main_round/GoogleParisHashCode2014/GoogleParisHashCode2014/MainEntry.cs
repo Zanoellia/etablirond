@@ -89,14 +89,37 @@ namespace GoogleParisHashCode2014
 
         class Car
         {
-            public List<Junction> Moves { get; set; }
-            public Junction CurrentJunction { get { return Moves.Last(); } }
+            public List<Junction> TakenJunctions { get; set; }
+            public List<Street> TakenStreets { get; set; }
+            public Junction CurrentJunction { get { return TakenJunctions.Last(); } }
             public int CurrentDistance { get; set; }
+            public int CurrentTimer { get; set; }
 
             public Car(Junction first)
             {
-                Moves = new List<Junction>{first};
+                TakenJunctions = new List<Junction> { first };
+                TakenStreets = new List<Street>();
+                CurrentDistance = 0;
+                CurrentTimer = 0;
             }
+
+            public void AddJunction(Junction junction)
+            {
+                var street = GetStreet(CurrentJunction, junction);
+                TakenStreets.Add(street);
+                CurrentDistance += street.Length;
+                CurrentTimer += street.Cost;
+                TakenJunctions.Add(junction);
+            }
+        }
+
+        private static Street GetStreet(Junction from, Junction to)
+        {
+            return
+                Streets.Where(
+                    s =>
+                    (s.From == from && s.To == to) ||
+                    (s.From == to && s.To == from && s.Direction == DirectionEnum.TwoWay)).First();
         }
 
         private static void ExtractData(string file)
@@ -129,7 +152,7 @@ namespace GoogleParisHashCode2014
             }
 
             /*
-            foreach (var junction in Junctions.Values)
+            foreach (var junction in TakenJunctions.Values)
             {
                 junction.Dump();
             }
@@ -150,8 +173,8 @@ namespace GoogleParisHashCode2014
             Sb.AppendFormat("{0}\n", Cars.Count);
             foreach (var car in Cars)
             {
-                Sb.AppendFormat("{0}\n", car.Moves.Count);
-                foreach (var move in car.Moves)
+                Sb.AppendFormat("{0}\n", car.TakenJunctions.Count);
+                foreach (var move in car.TakenJunctions)
                 {
                     Sb.AppendFormat("{0}\n", move.Id);
                 }
@@ -186,8 +209,8 @@ namespace GoogleParisHashCode2014
 
         private static void Run()
         {
-            Cars[1].Moves.Add(Junctions[1]);
-            Cars[1].Moves.Add(Junctions[2]);
+            Cars[1].AddJunction(Junctions[1]);
+            Cars[1].AddJunction(Junctions[2]);
         }
     }
 }
