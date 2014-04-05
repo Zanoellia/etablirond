@@ -14,10 +14,26 @@ long countDiff(int l, int h)
   return res;
 }
 
+void getFirstHash(int* i, int* j)
+{
+for (*i = 0; *i < 716; (*i)++)
+	for (*j = 0; *j < 1523; (*j)++)
+		if (current[*i][*j] == '.' && entry[*i][*j] == '#')
+			return;
+}
+
+void hillClimbing()
+{
+	int i, j;
+	getFirstHash(&i, &j);
+	std::cout << i << ", " << j << std::endl;
+}
+
 int main (int argc, char **argv)
 {
 	int count = 0;
 	memset(current, '.', 716*1523*sizeof(char));
+
 	for (int i = 0; i < 716 ; i++)
 	{
 		for (int j = 0; j < 1523 ; j++)
