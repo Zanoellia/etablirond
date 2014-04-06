@@ -45,7 +45,7 @@ def main():
   cars = []
   for i in range(NB_CARS):
     car = Car(G, INIT_INTER)
-    find_a_way(car, G)
+  #  find_a_way(car, G)
     cars.append(car)
 
 # algo
@@ -56,10 +56,10 @@ def main():
 #  print(visitStreet(G, 1903, 9877))
   for car in cars:
     while (1):
-      nextMove = car.GetNextMove()
+      nextMove = car.getNextMove(G)
       if (nextMove == None):
          break;
-      car.AddMove(nextMove)
+      car.addMove(G, nextMove[0]['id'], nextMove[1]['cost'])
 
-
+  printOutput(NB_CARS, cars)
 main()

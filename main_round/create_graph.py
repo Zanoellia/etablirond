@@ -18,13 +18,21 @@ def CreateGraph(lNode, lEdge):
 
 
 def visitStreet(G, startNode, destNode):
+  cost = 0;
+  length = 0;
   if (G[startNode][destNode]):
+    cost = G[startNode][destNode]['cost']
+    length = G[startNode][destNode]['length']
     G[startNode][destNode]['visited'] = 1
+    G[startNode][destNode]['length'] = 0
+    G[startNode][destNode]['cost'] += 1000
     try:
       G[destNode][startNode]['visited'] = 1
+      G[startNode][destNode]['length'] = 0
+      G[startNode][destNode]['cost'] += 1000
     except KeyError:
       pass
-    return [G[startNode][destNode]['cost'], G[startNode][destNode]['length']]
+    return [cost, length]
   else:
     return None
 
@@ -35,6 +43,15 @@ def getNeighboursInfo(G, startNode):
   for node in nodes:
     ret.append([ G.node[node], G[startNode][node]])
   return ret
+
+
+#def splitGraph(G, num)
+#  retGraph = []
+#  for x in xrange(num)
+#    retGraph.append(nx.DiGraph())
+#  return retGraph
+
+
 
 
 
