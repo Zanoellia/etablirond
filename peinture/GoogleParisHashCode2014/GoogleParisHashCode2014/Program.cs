@@ -3,17 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GoogleParisHashCode2014
 {
     internal class Program
     {
-        private static int _height;
-        private static int _width;
-        private const int Sjump = 1;
-        private const int Rjump = 1;
-        private const int Cjump = 1;
-
         public struct Move
         {
             public int R;
@@ -36,6 +31,11 @@ namespace GoogleParisHashCode2014
                 S = 0;
             }
 
+            public bool IsDefault()
+            {
+                return R == 0 && C == 0 && S == 0;
+            }
+
             public bool NotFound()
             {
                 return R == -1 && C == -1;
@@ -43,8 +43,7 @@ namespace GoogleParisHashCode2014
 
             public bool IsValid()
             {
-                return R >= 0 && R < _height && C >= 0 && C < _width && S >= 0 && R - S >= 0 && C - S >= 0 &&
-                       R + S < _height && C + S < _width;
+                return R >= 0 && R < _height && C >= 0 && C < _width && S >= 0 && R - S >= 0 && C - S >= 0 && R + S < _height && C + S < _width;
             }
 
             public new string ToString()
@@ -58,235 +57,317 @@ namespace GoogleParisHashCode2014
             }
         }
 
-        private static List<char[]> ExtractData(string file)
+        private static void ExtractData(string file)
         {
             var lines = File.ReadAllLines(file);
-            var res = new List<char[]>();
             var dim = lines[0].Split(' ');
+
             _height = int.Parse(dim[0]);
             _width = int.Parse(dim[1]);
 
-            for (int index = 1; index < lines.Length; index++)
+            for (int i = 1; i < _height + 1; i++)
             {
-                var line = lines[index];
-                res.Add(line.ToCharArray());
+                Expected.Add(lines[i].ToCharArray());
             }
-
-            return res;
         }
 
-        private static List<char[]> GetPlayground(IEnumerable<char[]> model)
+        private static void GetPlayground()
         {
-            var res = new List<char[]>();
+            Playground.Clear();
 
-            foreach (var list in model)
+            foreach (char[] list in Expected)
             {
                 var toAdd = (char[])list.Clone();
 
-                for (int i = 0; i < toAdd.Length; i++)
+                for (int i = 0; i < _width; i++)
                 {
                     toAdd[i] = '.';
                 }
 
-                res.Add(toAdd);
+                Playground.Add(toAdd);
             }
-
-            return res;
         }
 
-        private static List<char[]> PaintSq(List<char[]> playground, Move m, bool output)
+        private static void PaintSq(Move m, bool output)
         {
-            if (output)
+            lock (Lock)
             {
-                Sb.AppendFormat("PAINTSQ {0} {1} {2}\n", m.R, m.C, m.S);
-                _opCounter++;
-            }
-            var res = new List<char[]>();
-
-            for (int y = m.R - m.S; y <= m.R + m.S; y++)
-            {
-                var chars = new char[m.S * 2 + 1];
-
-                for (int x = m.C - m.S; x <= m.C + m.S; x++)
+                if (output)
                 {
-                    chars[x - (m.C - m.S)] = playground[y][x];
-                    playground[y][x] = '#';
+                    Sb.AppendFormat("PAINTSQ {0} {1} {2}\n", m.R, m.C, m.S);
+                    _opCounter++;
                 }
-
-                res.Add(chars);
             }
-            return res;
+
+            Parallel.For(m.R - m.S, m.R + m.S + 1, y =>
+                Parallel.For(m.C - m.S, m.C + m.S + 1, x =>
+                {
+                    Playground[y][x] = '#';
+                }));
         }
 
-        private static Move GetFirstCellToBePrint(List<char[]> expected, List<char[]> playground)
+        private static Move GetFirstCellToBePrint()
         {
-            for (int i = _startSearch; i < expected.Count; i++)
+            for (int i = 0; i < _height; i++)
             {
-                var exp = expected[i];
-                _startSearch = Math.Max(_startSearch, i);
-                for (int j = 0; j < exp.Length; j++)
+                for (int j = 0; j < _width; j++)
                 {
-                    if (expected[i][j] != playground[i][j] && expected[i][j] == '#')
+                    if (Expected[i][j] != Playground[i][j] && Expected[i][j] == '#')
                     {
                         return new Move(i, j);
                     }
                 }
             }
+
             return new Move(-1, -1);
         }
-
-        private static void EraseCell(List<char[]> playground, Move m, bool output)
+        
+        private static Move GetRandomCellToBePrint()
         {
-            if (output)
-            {
-                Sb.AppendFormat("ERASECELL {0} {1}\n", m.R, m.C);
-                _opCounter++;
-            }
-            playground[m.R][m.C] = '.';
-        }
+            int k = Rand.Next(_globalCost);
+            var res = new Move();
 
-        private static long DiffCount(List<char[]> expected, List<char[]> playground)
-        {
-            long res = 0;
-            for (int i = 0; i < expected.Count; i++)
+            while (true)
             {
-                var exp = expected[i];
-                for (int j = 0; j < exp.Length; j++)
-                {
-                    if (expected[i][j] != playground[i][j])
+                Parallel.For(0, _height, i =>
+                    Parallel.For(0, _width, j =>
                     {
-                        res += expected[i][j] == '.' ? 2 : 1;
-                    }
+                        if (Expected[i][j] != Playground[i][j] && Expected[i][j] == '#')
+                        {
+                            lock (Lock)
+                            {
+                                k--;
+
+                                if (k == 0)
+                                {
+                                    res.R = i;
+                                    res.C = j;
+                                }
+                            }
+                        }
+                    }));
+
+                if (!res.IsDefault())
+                {
+                    return res;
                 }
             }
+        }
+
+        private static void EraseCell(Move m, bool output)
+        {
+            lock (Lock)
+            {
+                if (output)
+                {
+                    Sb.AppendFormat("ERASECELL {0} {1}\n", m.R, m.C);
+                    _opCounter++;
+                }
+            }
+
+            Playground[m.R][m.C] = '.';
+        }
+
+        private static int DiffCount()
+        {
+            int res = 0;
+
+            Parallel.For(0, _height, i =>
+                Parallel.For(0, _width, j =>
+                {
+                    if (Expected[i][j] != Playground[i][j])
+                    {
+                        res += 1;
+
+                        if (Expected[i][j] == '.')
+                        {
+                            res += 5;
+                        }
+                    }
+                }));
+
             return res;
         }
 
-        private static void Reset(List<char[]> src, List<char[]> dst, Move m)
+        private static int DiffCount(Move m)
         {
-            for (int y = m.R - m.S; y <= m.R + m.S; y++)
-            {
-                for (int x = m.C - m.S; x <= m.C + m.S; x++)
+            int res = 0;
+
+            Parallel.For(m.R - m.S, m.R + m.S + 1, y =>
+                Parallel.For(m.C - m.S, m.C + m.S + 1, x =>
                 {
-                    dst[y][x] = src[y - (m.R - m.S)][x - (m.C - m.S)];
-                }
-            }
+                    if (Expected[y][x] == '.')
+                    {
+                        res += 6;
+                    }
+                    else if (Playground[y][x] == '.')
+                    {
+                        res -= 1;
+                    }
+                }));
+
+            return res;
         }
 
         private static IEnumerable<Move> BuildMoves(Move move)
         {
-            var res = new List<Move>
+            var res = new List<Move> {new Move(move.R, move.C, move.S)};
+
+            for (int i = 1; i < 3; i++)
             {
-                new Move(move.R, move.C, move.S),
-                new Move(move.R, move.C, move.S + Sjump),
-                new Move(move.R, move.C, move.S - Sjump),
-                new Move(move.R, move.C + Cjump, move.S),
-                new Move(move.R, move.C - Cjump, move.S),
-                new Move(move.R, move.C + Cjump, move.S + Sjump),
-                new Move(move.R, move.C + Cjump, move.S - Sjump),
-                new Move(move.R, move.C - Cjump, move.S + Sjump),
-                new Move(move.R, move.C - Cjump, move.S - Sjump),
-                new Move(move.R + Rjump, move.C, move.S),
-                new Move(move.R - Rjump, move.C, move.S),
-                new Move(move.R + Rjump, move.C, move.S + Sjump),
-                new Move(move.R + Rjump, move.C, move.S - Sjump),
-                new Move(move.R - Rjump, move.C, move.S + Sjump),
-                new Move(move.R - Rjump, move.C, move.S - Sjump),
-                new Move(move.R + Rjump, move.C + Cjump, move.S + Sjump),
-                new Move(move.R + Rjump, move.C + Cjump, move.S - Sjump),
-                new Move(move.R + Rjump, move.C - Cjump, move.S + Sjump),
-                new Move(move.R + Rjump, move.C - Cjump, move.S - Sjump),
-                new Move(move.R - Rjump, move.C + Cjump, move.S + Sjump),
-                new Move(move.R - Rjump, move.C + Cjump, move.S - Sjump),
-                new Move(move.R - Rjump, move.C - Cjump, move.S + Sjump),
-                new Move(move.R - Rjump, move.C - Cjump, move.S - Sjump),
-            };
+                res.Add(new Move(move.R, move.C, move.S + i));
+                res.Add(new Move(move.R, move.C, move.S - i));
+                res.Add(new Move(move.R, move.C + i, move.S));
+                res.Add(new Move(move.R, move.C - i, move.S));
+                res.Add(new Move(move.R, move.C + i, move.S + i));
+                res.Add(new Move(move.R, move.C + i, move.S - i));
+                res.Add(new Move(move.R, move.C - i, move.S + i));
+                res.Add(new Move(move.R, move.C - i, move.S - i));
+                res.Add(new Move(move.R + i, move.C, move.S));
+                res.Add(new Move(move.R - i, move.C, move.S));
+                res.Add(new Move(move.R + i, move.C, move.S + i));
+                res.Add(new Move(move.R + i, move.C, move.S - i));
+                res.Add(new Move(move.R - i, move.C, move.S + i));
+                res.Add(new Move(move.R - i, move.C, move.S - i));
+                res.Add(new Move(move.R + i, move.C + i, move.S + i));
+                res.Add(new Move(move.R + i, move.C + i, move.S - i));
+                res.Add(new Move(move.R + i, move.C - i, move.S + i));
+                res.Add(new Move(move.R + i, move.C - i, move.S - i));
+                res.Add(new Move(move.R - i, move.C + i, move.S + i));
+                res.Add(new Move(move.R - i, move.C + i, move.S - i));
+                res.Add(new Move(move.R - i, move.C - i, move.S + i));
+                res.Add(new Move(move.R - i, move.C - i, move.S - i));
+            }
 
             return res.Where(m => m.IsValid()).ToList();
         }
 
-        private static void HillClimbing(List<char[]> expected, List<char[]> playground)
+        private static void HillClimbing(int globalLimit)
         {
-            while (!GetFirstCellToBePrint(expected, playground).NotFound())
+            _opCounter = 0;
+            Sb.Clear();
+            _globalCost = DiffCount();
+
+            while (!GetFirstCellToBePrint().NotFound())
             {
-                for (int i = 0; i < expected.Count; i++)
+                if (_globalCost < globalLimit)
                 {
-                    var exp = expected[i];
-                    for (int j = 0; j < exp.Length; j++)
+                    break;
+                }
+
+                Move res = GetRandomCellToBePrint();
+                FindBestSquare(res);
+            }
+
+            while (!GetFirstCellToBePrint().NotFound())
+            {
+                Parallel.For(0, _height, i =>
+                    Parallel.For(0, _width, j =>
                     {
-                        if (expected[i][j] != playground[i][j] && expected[i][j] == '#')
+                        if (Expected[i][j] != Playground[i][j] && Expected[i][j] == '#')
                         {
                             var res = new Move(i, j);
-                            Move bestMove = res;
-                            long bestHeuristic = DiffCount(playground, expected);
+                            FindBestSquare(res);
+                        }
+                    }));
+            }
+        }
 
-                            var alreadyTried = new List<Move>();
+        private static void FindBestSquare(Move res)
+        {
+            Move bestMove = res;
+            int bestHeuristic = DiffCount(bestMove);
+            var alreadyTried = new List<Move>();
 
-                            while (true)
-                            {
-                                var moves = BuildMoves(bestMove).Where(m => !alreadyTried.Contains(m)).ToList();
+            while (true)
+            {
+                List<Move> moves = BuildMoves(bestMove).Where(m => !alreadyTried.Contains(m)).ToList();
 
-                                if (!moves.Any())
-                                {
-                                    break;
-                                }
+                if (!moves.Any())
+                {
+                    break;
+                }
 
-                                foreach (var m in moves)
-                                {
-                                    alreadyTried.Add(m);
-                                    var bak = PaintSq(playground, m, false);
-                                    long heuristic = DiffCount(expected, playground);
+                Parallel.ForEach(moves, m =>
+                {
+                    lock (Lock)
+                    {
+                        alreadyTried.Add(m);
+                    }
 
-                                    if (heuristic < bestHeuristic)
-                                    {
-                                        bestMove = m;
-                                        bestHeuristic = heuristic;
-                                    }
-                                    Reset(bak, playground, m);
-                                }
-                            }
+                    int heuristic = DiffCount(m);
 
-                            PaintSq(playground, bestMove, true);
-                            Console.WriteLine(_opCounter);
+                    if (heuristic < bestHeuristic)
+                    {
+                        bestMove = m;
+                        bestHeuristic = heuristic;
+                    }
+                });
+            }
+
+            _globalCost += bestHeuristic;
+            PaintSq(bestMove, true);
+            //Console.WriteLine("{0}, {1}", _opCounter, _globalCost);
+        }
+
+        private static void HillCleaning()
+        {
+            Parallel.For(0, _height, i =>
+                Parallel.For(0, _width, j =>
+                {
+                    if (Expected[i][j] != Playground[i][j])
+                    {
+                        EraseCell(new Move(i, j), true);
+                    }
+                }));
+        }
+
+        private static int _height;
+        private static int _width;
+        private static int _opCounter;
+        private static int _globalCost;
+        private static readonly Random Rand;
+        private static readonly StringBuilder Sb;
+        private static readonly List<char[]> Expected;
+        private static readonly List<char[]> Playground;
+        private static readonly object Lock;
+
+        static Program()
+        {
+            Lock = new object();
+            Rand = new Random();
+            Expected = new List<char[]>();
+            Playground = new List<char[]>();
+            Sb = new StringBuilder();
+        }
+
+        private static void Main()
+        {
+            ExtractData("doodle.txt");
+
+            for (int i = 14; i <= 20; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    var key = i + "_" + j;
+
+                    GetPlayground();
+                    HillClimbing(i*10000);
+                    HillCleaning();
+                    Console.WriteLine("globalLimit: {0}, {1}", i, _opCounter);
+                    Sb.Insert(0, string.Format("{0}\n", _opCounter));
+
+                    if (_opCounter < 19333)
+                    {
+                        using (var sw = new StreamWriter(string.Format("{0}_doodle_{1}.out", _opCounter, key)))
+                        {
+                            sw.Write(Sb.ToString());
                         }
                     }
                 }
             }
-        }
 
-        private static void HillCleaning(List<char[]> expected, List<char[]> playground)
-        {
-            for (int i = 0; i < expected.Count; i++)
-            {
-                var exp = expected[i];
-                for (int j = 0; j < exp.Length; j++)
-                {
-                    if (expected[i][j] != playground[i][j])
-                    {
-                        EraseCell(playground, new Move(i, j), true);
-                    }
-                }
-            }
-        }
-
-        private static readonly StringBuilder Sb = new StringBuilder();
-        private static int _opCounter;
-        private static int _startSearch;
-
-        private static void Main()
-        {
-            var expected = ExtractData("simple.txt");
-            List<char[]> playground = GetPlayground(expected);
-
-            HillClimbing(expected, playground);
-            HillCleaning(expected, playground);
-            Console.WriteLine(DiffCount(playground, expected));
-            Sb.Insert(0, string.Format("{0}\n", _opCounter));
-
-            using (var sw = new StreamWriter("simple.out"))
-            {
-                sw.Write(Sb.ToString());
-            }
+            Console.ReadLine();
         }
     }
 }

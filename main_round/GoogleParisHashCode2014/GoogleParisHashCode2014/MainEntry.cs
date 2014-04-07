@@ -1,10 +1,15 @@
-﻿using System;
+﻿//#define RATIO // BETA
+#define RANDOM
+//#define PARALLEL
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 
 namespace GoogleParisHashCode2014
 {
@@ -104,6 +109,7 @@ namespace GoogleParisHashCode2014
             public List<Street> TakenStreets { get; set; }
             public Junction CurrentJunction { get { return TakenJunctions.Last(); } }
             public long CurrentDistance { get; set; }
+            public long ReusedDistance { get; set; }
             public int CurrentTimer { get; set; }
 
             public Car(Junction first)
@@ -119,9 +125,10 @@ namespace GoogleParisHashCode2014
                 var street = CurrentJunction.Neighbours[junction];
                 CurrentDistance += street.AlreadyUsed ? 0 : street.Length;
                 CurrentTimer += street.Cost;
+                ReusedDistance += street.AlreadyUsed ? street.OriginalLength : 0;
                 street.AlreadyUsed = true;
                 street.Length = 0;
-                street.Handicap += handicap;
+                street.Handicap = street.Handicap == 0 ? handicap : street.Handicap * 2;
                 TakenStreets.Add(street);
                 TakenJunctions.Add(junction);
             }
@@ -137,29 +144,48 @@ namespace GoogleParisHashCode2014
             }
 
             private static readonly object Lock = new object();
-            private static readonly Random Rand = new Random();
+            public static readonly Random Rand = new Random();
+
+
             public Junction GetNextMove()
             {
-                var current = CurrentJunction;
-                Junction res;
+                Junction current = CurrentJunction;
+                Junction res = null;
+
                 lock (Lock)
                 {
-                    var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
-                    var maxDistances =
-                        possibleMoves.Where(p => p.Value.Length == possibleMoves.Max(max => max.Value.Length));
-                     var tmp =
-                        maxDistances.Where(
-                            p =>
-                            p.Value.Cost + p.Value.Handicap ==
-                            maxDistances.Min(min => min.Value.Cost + min.Value.Handicap)).Select(p => p.Key);
-                    var count = tmp.Count();
-                    res = count > 1 ? tmp.ToList()[Rand.Next(count)] : tmp.FirstOrDefault();
+                    try
+                    {
+                        var possibleMoves = current.Neighbours.Where(p => CurrentTimer + p.Value.Cost <= _timeAlloted);
+#if RATIO
+                        int maxRatio = possibleMoves.Max(p => (int)((float)p.Value.Length / (float)(p.Value.Cost + p.Value.Handicap)));
+                        var ratios = possibleMoves.Where(p => (int)((float)p.Value.Length / (float)(p.Value.Cost + p.Value.Handicap)) == maxRatio);
+                        var tmp = ratios.Select(p => p.Key);
+#else
+                       var maxValue = possibleMoves.Max(p => p.Value.Length);
+                        var maxDistances = possibleMoves.Where(p => p.Value.Length == maxValue);
+                        var minCost = maxDistances.Min(p => p.Value.Cost + p.Value.Handicap);
+                        var tmp = maxDistances.Where(p => p.Value.Cost + p.Value.Handicap == minCost).Select(p => p.Key); 
+                        //var tmp = possibleMoves.OrderByDescending(p => p.Value.Length).Take(2).Select(p => p.Key); 
+#endif
+
+#if RANDOM
+                        var count = tmp.Count();
+                        res = count > 1 ? tmp.ToList()[Rand.Next(count)] : tmp.FirstOrDefault();
+#else
+                        res = tmp.FirstOrDefault();
+#endif
+                    }
+                    catch (Exception)
+                    {
+                        
+                    }
                 }
                 return res;
             }
         }
 
-        private static void ExtractData(string file)
+        private static void ExtractData(string file, string preloadFile)
         {
             var lines = File.ReadAllLines(file);
             var dim = lines[0].Split(' ');
@@ -180,6 +206,28 @@ namespace GoogleParisHashCode2014
             {
                 Street street = Street.Parse(lines[i]);
                 Streets.Add(street);
+            }
+
+            if (preloadFile != null)
+            {
+                var preload = File.ReadAllLines(preloadFile);
+                var preloadIndex = 1;
+
+                for (int i = 0; i < _nbCars; i++)
+                {
+                    var parseIndex = int.Parse(preload[preloadIndex]);
+                    var junctions = new List<Junction>();
+
+                    for (int j = 2; j < parseIndex; j++)
+                    {
+                        var junctionId = int.Parse(preload[preloadIndex + j]);
+                        var junction = Junctions[junctionId];
+                        junctions.Add(junction);
+                    }
+
+                    Preloader.Add(junctions);
+                    preloadIndex += parseIndex + 1;
+                }
             }
 
             /*
@@ -223,23 +271,26 @@ namespace GoogleParisHashCode2014
         private static readonly List<Street> Streets = new List<Street>();
         private static readonly List<Car> Cars = new List<Car>();
         private static readonly StringBuilder Sb = new StringBuilder();
+        private static readonly List<List<Junction>> Preloader = new List<List<Junction>>();
         private static readonly Dictionary<string, long> Results = new Dictionary<string, long>();
 
         private static void HillClimbing(string filename)
         {
-            for (int i = 10; i < 300; i++)
+            for (int i = 100; i <= 300; i++)
+           // while (true)
             {
-                for (int j = 0; j < 25; j++)
+                //int i = Car.Rand.Next(20, 200);
+                for (int j = 0; j <= 500; j++)
                 {
-                    string key = i + "_" + j;
+                    string key = i  + "_" + j;
 
-                    Init();
+                    Init(i);
                     Run(i, key);
                     FillResults();
 
                     if (Results.ContainsKey(key))
                     {
-                        using (var sw = new StreamWriter(filename + key + ".out"))
+                        using (var sw = new StreamWriter(string.Format("{0}_{1}_{2}.out", Results[key], filename, key)))
                         {
                             sw.Write(Sb.ToString());
                         }
@@ -258,7 +309,7 @@ namespace GoogleParisHashCode2014
             }
         }
 
-        private static void Init()
+        private static void Init(int handicap)
         {
             Cars.Clear();
             Sb.Clear();
@@ -273,13 +324,23 @@ namespace GoogleParisHashCode2014
             {
                 street.Reset();
             }
+
+            for (int i = 0; i < Preloader.Count; i++)
+            {
+                var junctions = Preloader[i];
+
+                foreach (var junction in junctions)
+                {
+                    Cars[i].AddJunction(junction, handicap);
+                }
+            }
         }
 
         private static void Main()
         {
             const string filename = "paris_54000.txt";
 
-            ExtractData(filename);
+            ExtractData(filename, "preload.txt");
             HillClimbing(filename);
 
             Console.ReadLine();
@@ -287,32 +348,55 @@ namespace GoogleParisHashCode2014
 
         private static void Run(int handicap, string key)
         {
-            Parallel.For(0, Cars.Count,
-                         i =>
-                             {
-                                 var car = Cars[i];
-                                 // Single car logic
-                                 while (true)
-                                 {
-                                     // Single move logic
-                                     Junction nextMove = car.GetNextMove();
-
-                                     if (nextMove == null)
-                                     {
-                                         break;
-                                     }
-
-                                     car.AddJunction(nextMove, handicap);
-                                 }
-                             });
-
-            var curLen = Cars.Sum(c => c.CurrentDistance);
-            if (curLen > 1470002)
+#if PARALLEL
+            Parallel.ForEach(Cars, car =>
+#else
+            foreach (var car in Cars)
+#endif
             {
+                // Single car logic
+                while (true)
+                {
+                    // Single move logic
+                    Junction nextMove = car.GetNextMove();
+
+                    if (nextMove == null)
+                    {
+                        break;
+                    }
+
+                    car.AddJunction(nextMove, handicap);
+                }
+            }
+#if PARALLEL
+            );
+#endif
+            var curLen = Cars.Sum(c => c.CurrentDistance);
+            var reusedLen = Cars.Sum(c => c.ReusedDistance);
+            if (curLen > 1475000)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+            }
+            if (curLen > 1500000)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+            }
+            if (curLen > 1525000)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("!");
+            }
+            if (curLen > 1547743)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("!!!");
                 Results.Add(key, curLen);
             }
-            Console.WriteLine("Handicap {0} = {1}", handicap, curLen);
+            Console.WriteLine("Handicap {0} = {1} (+{2})", handicap, curLen, reusedLen);
+            if (curLen > 1400000)
+            {
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
         }
     }
 }
