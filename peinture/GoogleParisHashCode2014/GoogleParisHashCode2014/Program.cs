@@ -59,8 +59,8 @@ namespace GoogleParisHashCode2014
 
         private static void ExtractData(string file)
         {
-            var lines = File.ReadAllLines(file);
-            var dim = lines[0].Split(' ');
+            string[] lines = File.ReadAllLines(file);
+            string[] dim = lines[0].Split(' ');
 
             _height = int.Parse(dim[0]);
             _width = int.Parse(dim[1]);
@@ -102,7 +102,10 @@ namespace GoogleParisHashCode2014
             Parallel.For(m.R - m.S, m.R + m.S + 1, y =>
                 Parallel.For(m.C - m.S, m.C + m.S + 1, x =>
                 {
-                    Playground[y][x] = '#';
+                    if (Playground[y][x] == '.')
+                    {
+                        Playground[y][x] = '#';
+                    }
                 }));
         }
 
@@ -181,7 +184,7 @@ namespace GoogleParisHashCode2014
 
                         if (Expected[i][j] == '.')
                         {
-                            res += 5;
+                            res += 7;
                         }
                     }
                 }));
@@ -244,8 +247,9 @@ namespace GoogleParisHashCode2014
 
         private static void HillClimbing(int globalLimit)
         {
-            _opCounter = 0;
-            Sb.Clear();
+            //_opCounter = 0;
+            //Sb.Clear();
+            //Path.Clear();
             _globalCost = DiffCount();
 
             while (!GetFirstCellToBePrint().NotFound())
@@ -267,6 +271,7 @@ namespace GoogleParisHashCode2014
                         if (Expected[i][j] != Playground[i][j] && Expected[i][j] == '#')
                         {
                             var res = new Move(i, j);
+
                             FindBestSquare(res);
                         }
                     }));
@@ -306,8 +311,9 @@ namespace GoogleParisHashCode2014
             }
 
             _globalCost += bestHeuristic;
-            PaintSq(bestMove, true);
-            //Console.WriteLine("{0}, {1}", _opCounter, _globalCost);
+            Path.Add(bestMove);
+            PaintSq(bestMove, false);
+            //Console.WriteLine("{0}, {1} (+{2})", _opCounter, _globalCost, _ruCounter);
         }
 
         private static void HillCleaning()
@@ -330,6 +336,7 @@ namespace GoogleParisHashCode2014
         private static readonly StringBuilder Sb;
         private static readonly List<char[]> Expected;
         private static readonly List<char[]> Playground;
+        private static readonly List<Move> Path;
         private static readonly object Lock;
 
         static Program()
@@ -338,30 +345,58 @@ namespace GoogleParisHashCode2014
             Rand = new Random();
             Expected = new List<char[]>();
             Playground = new List<char[]>();
+            Path = new List<Move>();
             Sb = new StringBuilder();
         }
 
+        // Todo: regroup if possible?
         private static void Main()
         {
             ExtractData("doodle.txt");
 
-            for (int i = 14; i <= 20; i++)
+            for (int i = 5; i <= 10; i++)
             {
-                for (int j = 0; j < 3; j++)
+                for (int j = 0; j < 1; j++)
                 {
                     var key = i + "_" + j;
 
                     GetPlayground();
-                    HillClimbing(i*10000);
-                    HillCleaning();
-                    Console.WriteLine("globalLimit: {0}, {1}", i, _opCounter);
-                    Sb.Insert(0, string.Format("{0}\n", _opCounter));
 
-                    if (_opCounter < 19333)
+                    Sb.Clear();
+                    Path.Clear();
+                    HillClimbing(i*10000);
+                    for (int k = 0; k < 10; k++)
                     {
-                        using (var sw = new StreamWriter(string.Format("{0}_doodle_{1}.out", _opCounter, key)))
+                        Console.WriteLine(Path.Count);
+                        var unique = Path.Distinct().ToList();
+                        Console.WriteLine(unique.Count);
+                        GetPlayground();
+                        Path.Clear();
+                        Path.AddRange(unique.Where(m => m.S > 5));
+
+                        foreach (var move in Path)
                         {
-                            sw.Write(Sb.ToString());
+                            PaintSq(move, false);
+                        }
+
+                        HillClimbing(i * 10000); 
+                        _opCounter = 0;
+
+                        foreach (var move in Path)
+                        {
+                            PaintSq(move, true);
+                        }
+
+                        HillCleaning();
+                        Console.WriteLine("globalLimit: {0}, {1}", i, _opCounter);
+                        Sb.Insert(0, string.Format("{0}\n", _opCounter));
+
+                        if (_opCounter < 19333)
+                        {
+                            using (var sw = new StreamWriter(string.Format("{0}_doodle_{1}.out", _opCounter, key)))
+                            {
+                                sw.Write(Sb.ToString());
+                            }
                         }
                     }
                 }
